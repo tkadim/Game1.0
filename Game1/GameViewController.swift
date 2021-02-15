@@ -13,8 +13,8 @@ class GameViewController: UIViewController {
     
     var collectionViewDataSource = [String]()
     var collectionView: UICollectionView?
-    
-//    @IBOutlet weak var gameTextViewField: UITextView!
+    var collectionViewPortraitConstraints = [NSLayoutConstraint]()
+    var collectionViewLanscapeConstraints = [NSLayoutConstraint]()
     
     var columnsNumber: Int!
     var rowsNumber: Int!
@@ -35,6 +35,8 @@ class GameViewController: UIViewController {
     var game: MoveBoxGame?
 
     var buttonsStackView = UIStackView()
+    var buttonsStackViewPortraitConstraints = [NSLayoutConstraint]()
+    var buttonsStackViewLanscapeConstraints = [NSLayoutConstraint]()
     var topButtonStackView = UIStackView()
     var leftRightButtonsStackView = UIStackView()
     var bottomButtonStackView = UIStackView()
@@ -46,8 +48,38 @@ class GameViewController: UIViewController {
         createButtons()
         startGame()
         
+        
     }
     
+    override func willTransition(to newCollection: UITraitCollection, with coordinator: UIViewControllerTransitionCoordinator) {
+
+        if(UIDevice.current.orientation.isLandscape){
+            
+            NSLayoutConstraint.deactivate(collectionViewPortraitConstraints)
+            NSLayoutConstraint.deactivate(buttonsStackViewPortraitConstraints)
+            
+            collectionViewLanscapeConstraints.append(collectionView!.widthAnchor.constraint(equalTo: view.heightAnchor, multiplier: 1))
+            collectionViewLanscapeConstraints.append(collectionView!.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 1))
+            collectionViewLanscapeConstraints.append(collectionView!.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor))
+            collectionViewLanscapeConstraints.append(collectionView!.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor))
+            
+            buttonsStackViewLanscapeConstraints.append(buttonsStackView.leadingAnchor.constraint(equalTo: collectionView!.trailingAnchor))
+            buttonsStackViewLanscapeConstraints.append(buttonsStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor))
+            buttonsStackViewLanscapeConstraints.append(buttonsStackView.centerYAnchor.constraint(equalTo: view.centerYAnchor))
+            
+            NSLayoutConstraint.activate(collectionViewLanscapeConstraints)
+            NSLayoutConstraint.activate(buttonsStackViewLanscapeConstraints)
+            
+        } else if(UIDevice.current.orientation.isPortrait){
+            NSLayoutConstraint.deactivate(collectionViewLanscapeConstraints)
+            NSLayoutConstraint.deactivate(buttonsStackViewLanscapeConstraints)
+            
+            NSLayoutConstraint.activate(collectionViewPortraitConstraints)
+            NSLayoutConstraint.activate(buttonsStackViewPortraitConstraints)
+            
+        }
+
+    }
     
     
     func startGame() {
@@ -62,6 +94,17 @@ class GameViewController: UIViewController {
 
     }
     
+    func refreshGameField() {
+
+        collectionViewDataSource = game?.printCurrentFieldState() ?? collectionViewDataSource
+        collectionView?.reloadData()
+        
+        if(box?.hitTheHole == true){
+            showWonGameAlert()
+        } else if(box?.deadEnd == true){
+            showLoseGameAlert()
+        }
+    }
     
     func showWonGameAlert() {
         
@@ -91,42 +134,29 @@ class GameViewController: UIViewController {
     
     func createCollectionView() {
         let layout = UICollectionViewFlowLayout.init()
+        
+        
         layout.scrollDirection = .vertical
         layout.minimumInteritemSpacing = 0
         layout.minimumLineSpacing = 0
         
-        
-        self.collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        self.collectionView?.delegate = self
-        self.collectionView?.dataSource = self
-        self.collectionView?.translatesAutoresizingMaskIntoConstraints = false
-        self.collectionView?.register(CustomCollectionViewCell.self, forCellWithReuseIdentifier: "CustomCollectionViewCell")
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView?.delegate = self
+        collectionView?.dataSource = self
+        collectionView?.translatesAutoresizingMaskIntoConstraints = false
+        collectionView?.register(CustomCollectionViewCell.self, forCellWithReuseIdentifier: "CustomCollectionViewCell")
         guard let collectionView = self.collectionView else {return}
-        self.view.addSubview(collectionView)
-        
-        collectionView.topAnchor.constraint(equalTo: view.topAnchor, constant: 0).isActive = true
-//        collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 500).isActive = true
-        collectionView.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 0).isActive = true
-        collectionView.rightAnchor.constraint(equalTo: view.rightAnchor, constant: 0).isActive = true
-        
         collectionView.backgroundColor = .white
+        view.addSubview(collectionView)
         
+        collectionViewPortraitConstraints.append(collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor))
+        collectionViewPortraitConstraints.append(collectionView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor))
+        collectionViewPortraitConstraints.append(collectionView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor))
+
         
+        NSLayoutConstraint.activate(collectionViewPortraitConstraints)
         
       }
-    
-    func refreshGameField() {
-
-        collectionViewDataSource = game?.printCurrentFieldState() ?? collectionViewDataSource
-        collectionView?.reloadData()
-        
-        if(box?.hitTheHole == true){
-            showWonGameAlert()
-        } else if(box?.deadEnd == true){
-            showLoseGameAlert()
-        }
-    }
-    
     
     
     func createButtons() {
@@ -136,8 +166,6 @@ class GameViewController: UIViewController {
         let buttonRight = UIButton(frame: CGRect(x: leftRightButtonsStackView.bounds.width, y: 0, width: 40, height: 40))
         let buttonLeft = UIButton(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
         
-//        buttonUp.titleLabel?.adjustsFontForContentSizeCategory = true
-//        buttonUp.titleLabel?.font = UIFont(name: "System", size:40)
         buttonUp.setTitle("🔼", for: .normal)
         buttonUp.addTarget(self, action: #selector(self.buttonUpClicked(sender:)), for: .touchUpInside)
                 
@@ -190,25 +218,24 @@ class GameViewController: UIViewController {
         refreshGameField()
     }
 
-    
-    //Main Buttons StackView
     func configureButtonsStackView() {
-        view.addSubview(buttonsStackView)
+        self.view.addSubview(buttonsStackView)
         
         buttonsStackView.axis = .vertical
         buttonsStackView.distribution = .fillEqually
-//        buttonsStackView.backgroundColor = .blue
         
         setButtonsStackViewConstrains()
     }
     
     func setButtonsStackViewConstrains() {
         buttonsStackView.translatesAutoresizingMaskIntoConstraints = false
-        buttonsStackView.topAnchor.constraint(equalTo: collectionView!.bottomAnchor, constant: 30).isActive = true
-        buttonsStackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 30).isActive = true
-        buttonsStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -30).isActive = true
-        buttonsStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -30).isActive = true
         
+        buttonsStackViewPortraitConstraints.append(buttonsStackView.topAnchor.constraint(equalTo: collectionView!.bottomAnchor))
+        buttonsStackViewPortraitConstraints.append(buttonsStackView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor))
+        buttonsStackViewPortraitConstraints.append(buttonsStackView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor))
+        buttonsStackViewPortraitConstraints.append(buttonsStackView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor))
+        
+        NSLayoutConstraint.activate(buttonsStackViewPortraitConstraints)
     }
     
     
@@ -217,7 +244,6 @@ class GameViewController: UIViewController {
         buttonsStackView.addSubview(topButtonStackView)
         topButtonStackView.axis = .vertical
         topButtonStackView.distribution = .fillEqually
-//        topButtonStackView.backgroundColor = .red
         setTopButtonStackViewConstrains()
     }
     
@@ -232,7 +258,6 @@ class GameViewController: UIViewController {
         buttonsStackView.addSubview(leftRightButtonsStackView)
         leftRightButtonsStackView.axis = .horizontal
         leftRightButtonsStackView.distribution = .fillEqually
-//        leftRightButtonsStackView.backgroundColor = .green
         setLeftRightButtonsStackViewConstrains()
     }
     

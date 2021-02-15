@@ -26,7 +26,7 @@ class CustomCollectionViewCell: UICollectionViewCell {
     self.cellAvatar?.sizeToFit()
     self.cellAvatar?.textAlignment = .center
     self.cellAvatar?.borderStyle = .line
-    
+    self.cellAvatar?.isUserInteractionEnabled = false
     
     [self.cellAvatar].forEach({
       $0?.translatesAutoresizingMaskIntoConstraints = false
